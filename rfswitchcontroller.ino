@@ -273,11 +273,11 @@ String wrapPage(String &content) {
 String getPage(String message, String header, int type = 0) {
   String page = "";
   if (type == 1)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "</strong> " + message + "</div></div></div>";
+  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "!</strong> " + message + "</div></div></div>";
   if (type == 2)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "</strong> " + message + "</div></div></div>";
+  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "!</strong> " + message + "</div></div></div>";
   if (type == 3)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "</strong> " + message + "</div></div></div>";
+  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "!</strong> " + message + "</div></div></div>";
   page +=   "<div class='row'>";
   page +=     "<div class='col-md-12'>";
   page +=       "<h3>Switches</h3>";
