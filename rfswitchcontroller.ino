@@ -113,10 +113,9 @@ void saveConfig() {
 // Stop listening for codes
 void stopListening()
 {
-  disableLed();
   saveCode = 0;
   onoff = 0;
-  ticker.detach();
+  disableLed();
 }
 
 void upd(int p, int pr, int b) {
@@ -201,10 +200,10 @@ bool setupWifi(bool resetConf) {
     Serial.println("failed to mount FS");
   }
   //end read
-  
+
   WiFiManagerParameter custom_hostname("hostname", "Choose a hostname to this RFtransmitter", host_name, 40);
   wifiManager.addParameter(&custom_hostname);
-  
+
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //and goes into a blocking loop awaiting configuration
@@ -244,7 +243,7 @@ String ipToString(IPAddress ip)
 //
 String wrapPage(String &content) {
   String wrap = "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head><meta http-equiv='refresh' content='300' />";
-  wrap += "<meta name='viewport' content='width=device-width, initial-scale=1' />";
+  wrap += "<meta name='viewport' content='width=device-width, initial-scale=0.75' />";
   wrap += "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />";
   wrap += "<title>ESP8266 RF Controller (" + String(host_name) + ")</title></head><body>";
   wrap += "<div class='container'>";
@@ -253,11 +252,11 @@ String wrapPage(String &content) {
   wrap +=     "<div class='col-md-12'>";
   wrap +=       "<ul class='nav nav-pills'>";
   wrap +=         "<li class='active'>";
-  wrap +=           "<a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'><span class='badge pull-right'>" + String(host_name) + ".local" + ":" + String(port) + "</span> Hostname</a></li>";
+  wrap +=           "<a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'>Hostname <span class='badge'>" + String(host_name) + ".local" + ":" + String(port) + "</span></a></li>";
   wrap +=         "<li class='active'>";
-  wrap +=           "<a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'><span class='badge pull-right'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span> Local</a></li>";
+  wrap +=           "<a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'>Local <span class='badge'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span></a></li>";
   wrap +=         "<li class='active'>";
-  wrap +=           "<a href='#'><span class='badge pull-right'>" + String(WiFi.macAddress()) + "</span> Mac Address</a></li>";
+  wrap +=           "<a href='#'>MAC <span class='badge'>" + String(WiFi.macAddress()) + "</span></a></li>";
   wrap +=       "</ul>";
   wrap +=     "</div>";
   wrap +=   "</div><hr />";
@@ -429,11 +428,11 @@ void setup() {
 void loop() {
   wemoManager.serverLoop();
   server.handleClient();
-  
+
   if (rcSwitch2.available()) {
-    
+
     int value = rcSwitch2.getReceivedValue();
-    
+
     if (value == 0) {
       Serial.print("Unknown encoding");
     } else {
@@ -442,7 +441,7 @@ void loop() {
       int b = rcSwitch2.getReceivedBitlength();
       switch (onoff) {
         case 0: break;
-        case 1: 
+        case 1:
           switch (saveCode) {
             case 1: sprintf(s1off, "%d", value); upd(p, pr, b); saveConfig(); stopListening(); break;
             case 2: sprintf(s2off, "%d", value); upd(p, pr, b); saveConfig(); stopListening(); break;
