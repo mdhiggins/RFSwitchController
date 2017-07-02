@@ -242,36 +242,43 @@ String ipToString(IPAddress ip)
 // Stream header HTML
 //
 void sendHeader() {
-  sendHeader(200);
+  sendHeader(200, false);
 }
 
-void sendHeader(int httpcode) {
+void sendHeader(int httpcode, bool redirect) {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(httpcode, "text/html", "");
-  server.sendContent( "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head><meta http-equiv='refresh' content='300' />");
-  server.sendContent( "<meta name='viewport' content='width=device-width, initial-scale=0.75' />");
-  server.sendContent( "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />");
-  server.sendContent( "<title>ESP8266 RF Controller (" + String(host_name) + ")</title></head><body>");
-  server.sendContent( "<div class='container'>");
-  server.sendContent(   "<h1>ESP8266 RF Controller</h1>");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<ul class='nav nav-pills'>");
-  server.sendContent(         "<li class='active'>");
-  server.sendContent(           "<a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'>Hostname <span class='badge'>" + String(host_name) + ".local" + ":" + String(port) + "</span></a></li>");
-  server.sendContent(         "<li class='active'>");
-  server.sendContent(           "<a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'>Local <span class='badge'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span></a></li>");
-  server.sendContent(         "<li class='active'>");
-  server.sendContent(           "<a href='#'>MAC <span class='badge'>" + String(WiFi.macAddress()) + "</span></a></li>");
-  server.sendContent(       "</ul>");
-  server.sendContent(     "</div>");
-  server.sendContent(   "</div><hr />");
+  server.send(httpcode, "text/html; charset=utf-8", "");
+  server.sendContent("<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n");
+  server.sendContent("<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n");
+  server.sendContent("  <head>\n");
+  if (redirect)
+  server.sendContent("    <meta http-equiv='refresh' content='10;URL=/' />\n");
+  server.sendContent("    <meta name='viewport' content='width=device-width, initial-scale=0.75' />");
+  server.sendContent("    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />");
+  server.sendContent("    <title>ESP8266 RF Controller (" + String(host_name) + ")</title>\n");
+  server.sendContent("  </head>\n");
+  server.sendContent("  <body>");
+  server.sendContent("    <div class='container'>\n");
+  server.sendContent("      <h1>ESP8266 RF Controller</h1>\n");
+  server.sendContent("      <div class='row'>\n");
+  server.sendContent("        <div class='col-md-12'>\n");
+  server.sendContent("          <ul class='nav nav-pills'>\n");
+  server.sendContent("            <li class='active'>\n");
+  server.sendContent("              <a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'>Hostname <span class='badge'>" + String(host_name) + ".local" + ":" + String(port) + "</span></a></li>\n");
+  server.sendContent("            <li class='active'>\n");
+  server.sendContent("              <a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'>Local <span class='badge'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span></a></li>\n");
+  server.sendContent("            <li class='active'>\n");
+  server.sendContent("              <a href='#'>MAC <span class='badge'>" + String(WiFi.macAddress()) + "</span></a></li>\n");
+  server.sendContent("          </ul>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("      </div><hr />\n");
 }
 
 void sendFooter() {
-  server.sendContent(   "<div class='row'><div class='col-md-12'><em>" + String(millis()) + "ms uptime</em></div></div>");
-  server.sendContent( "</div>");
-  server.sendContent( "</body></html>");
+  server.sendContent("      <div class='row'><div class='col-md-12'><em>" + String(millis()) + "ms uptime</em></div></div>\n");
+  server.sendContent("    </div>\n");
+  server.sendContent("  </body>\n");
+  server.sendContent("</html>\n");
   server.client().stop();
 }
 
@@ -287,99 +294,123 @@ void sendPage(String message, String header, int type) {
   sendPage(message, header, type, blank, blank, blank, blank);
 }
 
+void sendPage(String message, String header, int type, int httpheader, bool redirect) {
+  String blank = "";
+  sendPage(message, header, type, blank, blank, blank, blank, httpheader, redirect);
+}
+
 void sendPage(String message, String header, int type, String lc, String lb, String lpr, String lpu) {
-  sendHeader();
+  sendPage(message, header, type, lc, lb, lpr, lpu, 200, false);
+}
+
+void sendPage(String message, String header, int type, String lc, String lb, String lpr, String lpu, int httpheader, bool redirect) {
+  sendHeader(httpheader, redirect);
   if (type == 1)
-  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "!</strong> " + message + "</div></div></div>");
+  server.sendContent("      <div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "!</strong> " + message + "</div></div></div>\n");
   if (type == 2)
-  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "!</strong> " + message + "</div></div></div>");
+  server.sendContent("      <div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "!</strong> " + message + "</div></div></div>\n");
   if (type == 3)
-  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "!</strong> " + message + "</div></div></div>");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<h3>Switches</h3>");
-  server.sendContent(       "<form method='post' action='/config/name'>");
-  server.sendContent(         "<table class='table table-striped' style='table-layout: fixed;'>");
-  server.sendContent(           "<thead><tr><th>Switch Name</th><th>On Command</th><th>Off Command</th></tr></thead>");
-  server.sendContent(           "<tbody>");
-  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s1name' class='form-control' value='" + String(s1name) + "' /></div></td><td><a href='/config/switch?switch=1&amp;state=1'><code>" + String(s1code) + "</code></a></td><td><a href='/config/switch?switch=1&amp;state=0'><code>" + String(s1off) + "</code></a></td></tr>");
-  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s2name' class='form-control' value='" + String(s2name) + "' /></div></td><td><a href='/config/switch?switch=2&amp;state=1'><code>" + String(s2code) + "</code></a></td><td><a href='/config/switch?switch=2&amp;state=0'><code>" + String(s2off) + "</code></a></td></tr>");
-  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s3name' class='form-control' value='" + String(s3name) + "' /></div></td><td><a href='/config/switch?switch=3&amp;state=1'><code>" + String(s3code) + "</code></a></td><td><a href='/config/switch?switch=3&amp;state=0'><code>" + String(s3off) + "</code></a></td></tr>");
-  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s4name' class='form-control' value='" + String(s4name) + "' /></div></td><td><a href='/config/switch?switch=4&amp;state=1'><code>" + String(s4code) + "</code></a></td><td><a href='/config/switch?switch=4&amp;state=0'><code>" + String(s4off) + "</code></a></td></tr>");
-  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s5name' class='form-control' value='" + String(s5name) + "' /></div></td><td><a href='/config/switch?switch=5&amp;state=1'><code>" + String(s5code) + "</code></a></td><td><a href='/config/switch?switch=5&amp;state=0'><code>" + String(s5off) + "</code></a></td></tr>");
-  server.sendContent(           "</tbody></table>");
-  server.sendContent(           "<button type='submit' class='btn btn-default pull-right'>Update Names and Reboot</button>");
-  server.sendContent(         "</form>");
-  server.sendContent(     "</div></div>");
-  server.sendContent(   "<hr />");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<h3>Send Code</h3>");
-  server.sendContent(       "<form class='form-inline' method='post' action='/send'>");
-  server.sendContent(         "<div class='input-group'>");
-  server.sendContent(           "<div class='input-group-addon'>Code</div>");
-  server.sendContent(           "<input type='text' name='code' class='form-control' value='" + lc + "' /> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Bits</div>");
-  server.sendContent(           "<input type='text' name='bits' class='form-control' value='" + lb + "' /> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Protocol</div>");
-  server.sendContent(           "<input type='text' name='protocol' class='form-control' value='" + lpr + "' /> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Pulse</div>");
-  server.sendContent(           "<input type='text' name='pulse' class='form-control' value='" + lpu + "' /> </div>");
-  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Send</button>");
-  server.sendContent(       "</form>");
-  server.sendContent(     "</div></div>");
-  server.sendContent(   "<hr />");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<h3>Parameters</h3>");
-  server.sendContent(       "<form class='form-inline' method='post' action='/config'>");
-  server.sendContent(         "<div class='input-group'>");
-  server.sendContent(           "<div class='input-group-addon'>Bits</div>");
-  server.sendContent(           "<input type='text' name='bits' class='form-control' value='" + String(bits) + "' /> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Protocol</div>");
-  server.sendContent(           "<input type='text' name='protocol' class='form-control' value='" + String(protocol) + "' /> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Pulse</div>");
-  server.sendContent(           "<input type='text' name='pulse' class='form-control' value='" + String(pulse) + "' /> </div>");
-  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Save</button>");
-  server.sendContent(       "</form>");
-  server.sendContent(     "</div></div>");
-  server.sendContent(   "<hr />");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<h3>Switch Override</h3>");
-  server.sendContent(       "<form class='form-inline' method='post' action='/config/switch'>");
-  server.sendContent(         "<div class='form-group'>");
-  //server.sendContent(           "<label for='switches'>Switches</label>");
-  server.sendContent(           "<select id='switches' name='switch' class='form-control'>");
-  server.sendContent(             "<option value=1>" + String(s1name) + "</option>");
-  server.sendContent(             "<option value=2>" + String(s2name) + "</option>");
-  server.sendContent(             "<option value=3>" + String(s3name) + "</option>");
-  server.sendContent(             "<option value=4>" + String(s4name) + "</option>");
-  server.sendContent(             "<option value=5>" + String(s5name) + "</option>");
-  server.sendContent(           "</select></div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>On</div>");
-  server.sendContent(           "<input type='text' name='on' class='form-control'/> </div>");
-  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
-  server.sendContent(           "<div class='input-group-addon'>Off</div>");
-  server.sendContent(           "<input type='text' name='off' class='form-control'/> </div>");
-  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Save</button>");
-  server.sendContent(       "</form>");
-  server.sendContent(     "</div></div>");
-  server.sendContent(   "<hr />");
-  server.sendContent(   "<div class='row'>");
-  server.sendContent(     "<div class='col-md-12'>");
-  server.sendContent(       "<ul class='list-unstyled'>");
-  server.sendContent(         "<li><span class='badge'>GPIO " + String(pinR) + "</span> Receiving </li>");
-  server.sendContent(         "<li><span class='badge'>GPIO " + String(pinT) + "</span> Transmitting </li>");
-  server.sendContent(       "</ul>");
-  server.sendContent(     "</div>");
-  server.sendContent(   "</div>");
+  server.sendContent("      <div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "!</strong> " + message + "</div></div></div>\n");
+  server.sendContent("      <div class='row'>\n");
+  server.sendContent("        <div class='col-md-12'>\n");
+  server.sendContent("          <h3>Switches</h3>\n");
+  server.sendContent("          <form method='post' action='/config/name'>\n");
+  server.sendContent("            <table class='table table-striped' style='table-layout: fixed;'>\n");
+  server.sendContent("              <thead><tr><th>Switch Name</th><th>On Command</th><th>Off Command</th></tr></thead>\n");
+  server.sendContent("              <tbody>\n");
+  server.sendContent("                <tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s1name' class='form-control' value='" + String(s1name) + "' /></div></td><td><a href='/config/switch?switch=1&amp;state=1'><code>" + String(s1code) + "</code></a></td><td><a href='/config/switch?switch=1&amp;state=0'><code>" + String(s1off) + "</code></a></td></tr>\n");
+  server.sendContent("                <tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s2name' class='form-control' value='" + String(s2name) + "' /></div></td><td><a href='/config/switch?switch=2&amp;state=1'><code>" + String(s2code) + "</code></a></td><td><a href='/config/switch?switch=2&amp;state=0'><code>" + String(s2off) + "</code></a></td></tr>\n");
+  server.sendContent("                <tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s3name' class='form-control' value='" + String(s3name) + "' /></div></td><td><a href='/config/switch?switch=3&amp;state=1'><code>" + String(s3code) + "</code></a></td><td><a href='/config/switch?switch=3&amp;state=0'><code>" + String(s3off) + "</code></a></td></tr>\n");
+  server.sendContent("                <tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s4name' class='form-control' value='" + String(s4name) + "' /></div></td><td><a href='/config/switch?switch=4&amp;state=1'><code>" + String(s4code) + "</code></a></td><td><a href='/config/switch?switch=4&amp;state=0'><code>" + String(s4off) + "</code></a></td></tr>\n");
+  server.sendContent("                <tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s5name' class='form-control' value='" + String(s5name) + "' /></div></td><td><a href='/config/switch?switch=5&amp;state=1'><code>" + String(s5code) + "</code></a></td><td><a href='/config/switch?switch=5&amp;state=0'><code>" + String(s5off) + "</code></a></td></tr>\n");
+  server.sendContent("              </tbody>\n");
+  server.sendContent("            </table>\n");
+  server.sendContent("            <div class='form-group'>\n");
+  server.sendContent("              <button type='submit' class='btn btn-default'>Update Names and Reboot</button></div>\n");
+  server.sendContent("          </form>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("      </div>\n");
+  server.sendContent("      <hr />\n");
+  server.sendContent("      <div class='row'>\n");
+  server.sendContent("        <div class='col-md-4 col-sm-12 col-xs-12'>\n");
+  server.sendContent("          <div class='panel panel-default'>\n");
+  server.sendContent("            <div class='panel-heading'><h3 class='panel-title'>Send Code</h3></div>\n");
+  server.sendContent("            <div class='panel-body'>\n");
+  server.sendContent("              <form class='form' method='post' action='/send'>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='lc'>Code</label>\n");
+  server.sendContent("                  <input type='text' id='lc' name='code' class='form-control' value='" + lc + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='lb'>Bits</label>\n");
+  server.sendContent("                  <input type='text' id='lb' name='bits' class='form-control' value='" + lb + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='lpr'>Protocol</label>\n");
+  server.sendContent("                  <input type='text' id='lpr' name='protocol' class='form-control' value='" + lpr + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='lpu'>Pulse</label>\n");
+  server.sendContent("                  <input type='text' id='lpu' name='pulse' class='form-control' value='" + lpu + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <button type='submit' class='btn btn-default'>Send</button></div>\n");
+  server.sendContent("              </form>\n");
+  server.sendContent("            </div>\n");
+  server.sendContent("          </div>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("        <div class='col-md-4 col-sm-12 col-xs-12'>\n");
+  server.sendContent("          <div class='panel panel-default'>\n");
+  server.sendContent("            <div class='panel-heading'><h3 class='panel-title'>Universal Parameters</h3></div>\n");
+  server.sendContent("            <div class='panel-body'>\n");
+  server.sendContent("              <form class='form' method='post' action='/config'>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='bits'>Bits</label>\n");
+  server.sendContent("                  <input type='text' id='bits' name='bits' class='form-control' value='" + String(bits) + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='protocol'>Protocol</label>\n");
+  server.sendContent("                  <input type='text' id='protocol' name='protocol' class='form-control' value='" + String(protocol) + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='pulse'>Pulse</label>\n");
+  server.sendContent("                  <input type='text' id='pulse' name='pulse' class='form-control' value='" + String(pulse) + "' /> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <button type='submit' class='btn btn-default'>Save</button></div>\n");
+  server.sendContent("              </form>\n");
+  server.sendContent("            </div>\n");
+  server.sendContent("          </div>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("        <div class='col-md-4 col-sm-12 col-xs-12'>\n");
+  server.sendContent("          <div class='panel panel-default'>\n");
+  server.sendContent("            <div class='panel-heading'><h3 class='panel-title'>Switch Override</h3></div>\n");
+  server.sendContent("            <div class='panel-body'>\n");
+  server.sendContent("              <form class='form' method='post' action='/config/switch'>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='switches'>Switches</label>\n");
+  server.sendContent("                  <select id='switches' name='switch' class='form-control'>\n");
+  server.sendContent("                    <option value='1'>" + String(s1name) + "</option>\n");
+  server.sendContent("                    <option value='2'>" + String(s2name) + "</option>\n");
+  server.sendContent("                    <option value='3'>" + String(s3name) + "</option>\n");
+  server.sendContent("                    <option value='4'>" + String(s4name) + "</option>\n");
+  server.sendContent("                    <option value='5'>" + String(s5name) + "</option>\n");
+  server.sendContent("                  </select></div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='oncode'>On Code</label>\n");
+  server.sendContent("                  <input type='text' id='oncode' name='on' class='form-control'/> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <label for='offcode'>Off Code</label>\n");
+  server.sendContent("                  <input type='text' id='offcode' name='off' class='form-control'/> </div>\n");
+  server.sendContent("                <div class='form-group'>\n");
+  server.sendContent("                  <button type='submit' class='btn btn-default'>Save</button></div>\n");
+  server.sendContent("              </form>\n");
+  server.sendContent("            </div>\n");
+  server.sendContent("          </div>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("      </div>\n");
+  server.sendContent("      <hr />\n");
+  server.sendContent("      <div class='row'>\n");
+  server.sendContent("        <div class='col-md-12'>\n");
+  server.sendContent("          <ul class='list-unstyled'>\n");
+  server.sendContent("            <li><span class='badge'>GPIO " + String(pinR) + "</span> Receiving </li>\n");
+  server.sendContent("            <li><span class='badge'>GPIO " + String(pinT) + "</span> Transmitting </li>\n");
+  server.sendContent("          </ul>\n");
+  server.sendContent("        </div>\n");
+  server.sendContent("      </div>\n");
   sendFooter();
 }
 
@@ -428,14 +459,14 @@ void setup() {
     String s4n = server.arg("s4name");
     String s5n = server.arg("s5name");
 
-    strncpy(s1name, s1n.c_str(), 20); 
+    strncpy(s1name, s1n.c_str(), 20);
     strncpy(s2name, s2n.c_str(), 20);
     strncpy(s3name, s3n.c_str(), 20);
     strncpy(s4name, s4n.c_str(), 20);
     strncpy(s5name, s5n.c_str(), 20);
     saveConfig();
 
-    sendPage("Switch name updated, device must restart", "Success", 1);
+    sendPage("Switch name updated, device must restart", "Success", 1, 200, true);
     delay(2000);
     ESP.restart(); // Device need to be restarted to reset the WeMo switches
   });
@@ -474,7 +505,7 @@ void setup() {
       onoff = server.arg("state").toInt() + 1;
       digitalWrite(BUILTIN_LED, LOW);
       ticker.attach(10, stopListening);
-      sendPage("Listening for new code for 10 seconds", "Alert", 2);
+      sendPage("Listening for new code for 10 seconds", "Alert", 2, 200, true);
     }
   });
 
@@ -491,7 +522,7 @@ void setup() {
     }
     saveConfig();
 
-    sendPage("Global settings updated", "Success", 1);
+    sendPage("Universal settings updated", "Success", 1);
   });
 
   server.on("/", []() {
@@ -509,7 +540,7 @@ void setup() {
     rcSwitch.setPulseLength(pulse);
     rcSwitch.send(code, b);
 
-    sendPage("Sending code", "Success", 1, String(code), String(b), String(prot), String(pulse));
+    sendPage("Signal sent", "Success", 1, String(code), String(b), String(prot), String(pulse));
   });
 
   server.begin();
@@ -574,82 +605,42 @@ void sendSignal(char* protocol, char* pulse, char* code, char* bits) {
 
 void switchOneOn() {
   sendSignal(protocol, pulse, s1code, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s1code), atoi(bits));
-  //rcSwitch.send(16165135, 24);
 }
 
 void switchOneOff() {
   sendSignal(protocol, pulse, s1off, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s1off), atoi(bits));
-  //rcSwitch.send(16165134, 24);
 }
 
 void switchTwoOn() {
   sendSignal(protocol, pulse, s2code, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s2code), atoi(bits));
-  //rcSwitch.send(16165133, 24);
 }
 
 void switchTwoOff() {
   sendSignal(protocol, pulse, s2off, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s2off), atoi(bits));
-  //rcSwitch.send(16165132, 24);
 }
 
 void switchThreeOn() {
   sendSignal(protocol, pulse, s3code, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s3code), atoi(bits));
-  //rcSwitch.send(16165131, 24);
 }
 
 void switchThreeOff() {
   sendSignal(protocol, pulse, s3off, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s3off), atoi(bits));
-  //rcSwitch.send(16165130, bits);
 }
 
 void switchFourOn() {
   sendSignal(protocol, pulse, s4code, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s4code), atoi(bits));
-  //rcSwitch.send(16165127, 24);
 }
 
 void switchFourOff() {
   sendSignal(protocol, pulse, s4off, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s4off), atoi(bits));
-  //rcSwitch.send(16165126, 24);
 }
 
 void switchFiveOn() {
   sendSignal(protocol, pulse, s5code, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s5code), atoi(bits));
-  //rcSwitch.send(16165125, 24);
 }
 
 void switchFiveOff() {
   sendSignal(protocol, pulse, s5off, bits);
-  //rcSwitch.setProtocol(atoi(protocol));
-  //rcSwitch.setPulseLength(atoi(pulse));
-  //rcSwitch.send(atoi(s5off), atoi(bits));
-  //rcSwitch.send(16165124, 24);
 }
 
 // 15261954 (all on)
