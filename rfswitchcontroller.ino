@@ -190,7 +190,7 @@ bool setupWifi(bool resetConf) {
           strncpy(s5off, json["s5off"], 20);
           strncpy(pulse, json["pulse"], 10);
           strncpy(protocol, json["protocol"], 10);
-          strncpy(protocol, json["bits"], 10);
+          strncpy(bits, json["bits"], 10);
         } else {
           Serial.println("failed to load json config");
         }
@@ -253,13 +253,13 @@ void sendHeader(int httpcode, bool redirect) {
   server.sendContent("  <head>\n");
   if (redirect)
   server.sendContent("    <meta http-equiv='refresh' content='10;URL=/' />\n");
-  server.sendContent("    <meta name='viewport' content='width=device-width, initial-scale=0.75' />");
-  server.sendContent("    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />");
+  server.sendContent("    <meta name='viewport' content='width=device-width, initial-scale=0.75' />\n");
+  server.sendContent("    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />\n");
   server.sendContent("    <title>ESP8266 RF Controller (" + String(host_name) + ")</title>\n");
   server.sendContent("  </head>\n");
   server.sendContent("  <body>");
   server.sendContent("    <div class='container'>\n");
-  server.sendContent("      <h1>ESP8266 RF Controller</h1>\n");
+  server.sendContent("      <h1><a href='https://github.com/mdhiggins/RFSwitchController'>ESP8266 RF Controller</a></h1>\n");
   server.sendContent("      <div class='row'>\n");
   server.sendContent("        <div class='col-md-12'>\n");
   server.sendContent("          <ul class='nav nav-pills'>\n");
@@ -290,13 +290,11 @@ void sendPage(String message, String header) {
 }
 
 void sendPage(String message, String header, int type) {
-  String blank = "";
-  sendPage(message, header, type, blank, blank, blank, blank);
+  sendPage(message, header, type, "", String(bits), String(protocol), String(pulse));
 }
 
 void sendPage(String message, String header, int type, int httpheader, bool redirect) {
-  String blank = "";
-  sendPage(message, header, type, blank, blank, blank, blank, httpheader, redirect);
+  sendPage(message, header, type, "", String(bits), String(protocol), String(pulse), httpheader, redirect);
 }
 
 void sendPage(String message, String header, int type, String lc, String lb, String lpr, String lpu) {
@@ -414,6 +412,20 @@ void sendPage(String message, String header, int type, String lc, String lb, Str
   sendFooter();
 }
 
+void setupWemo() {
+  wemoManager.begin();
+  wemoSwitch1 = new WemoSwitch(String(s1name), 81, switchOneOn, switchOneOff);
+  wemoSwitch2 = new WemoSwitch(String(s2name), 82, switchTwoOn, switchTwoOff);
+  wemoSwitch3 = new WemoSwitch(String(s3name), 83, switchThreeOn, switchThreeOff);
+  wemoSwitch4 = new WemoSwitch(String(s4name), 84, switchFourOn, switchFourOff);
+  wemoSwitch5 = new WemoSwitch(String(s5name), 85, switchFiveOn, switchFiveOff);
+  if (String(s1name) != "") wemoManager.addDevice(*wemoSwitch1);
+  if (String(s2name) != "") wemoManager.addDevice(*wemoSwitch2);
+  if (String(s3name) != "") wemoManager.addDevice(*wemoSwitch3);
+  if (String(s4name) != "") wemoManager.addDevice(*wemoSwitch4);
+  if (String(s5name) != "") wemoManager.addDevice(*wemoSwitch5);
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -437,17 +449,7 @@ void setup() {
   MDNS.addService("http", "tcp", port);
 
   // Setup the WeMo emulator
-  wemoManager.begin();
-  wemoSwitch1 = new WemoSwitch(String(s1name), 81, switchOneOn, switchOneOff);
-  wemoSwitch2 = new WemoSwitch(String(s2name), 82, switchTwoOn, switchTwoOff);
-  wemoSwitch3 = new WemoSwitch(String(s3name), 83, switchThreeOn, switchThreeOff);
-  wemoSwitch4 = new WemoSwitch(String(s4name), 84, switchFourOn, switchFourOff);
-  wemoSwitch5 = new WemoSwitch(String(s5name), 85, switchFiveOn, switchFiveOff);
-  if (String(s1name) != "") wemoManager.addDevice(*wemoSwitch1);
-  if (String(s2name) != "") wemoManager.addDevice(*wemoSwitch2);
-  if (String(s3name) != "") wemoManager.addDevice(*wemoSwitch3);
-  if (String(s4name) != "") wemoManager.addDevice(*wemoSwitch4);
-  if (String(s5name) != "") wemoManager.addDevice(*wemoSwitch5);
+  setupWemo();
 
   rcSwitch.enableTransmit(pinT);  // Pin with which to transmit on
   rcSwitch2.enableReceive(pinR);  // Pin to receive
@@ -466,9 +468,8 @@ void setup() {
     strncpy(s5name, s5n.c_str(), 20);
     saveConfig();
 
-    sendPage("Switch name updated, device must restart", "Success", 1, 200, true);
-    delay(2000);
-    ESP.restart(); // Device need to be restarted to reset the WeMo switches
+    sendPage("Switch name updated, device must restart, please refresh your browser", "Success", 1);
+    ESP.reset(); // Device need to be restarted to reset the WeMo switches
   });
 
   server.on("/config/switch", []() {
@@ -505,7 +506,7 @@ void setup() {
       onoff = server.arg("state").toInt() + 1;
       digitalWrite(BUILTIN_LED, LOW);
       ticker.attach(10, stopListening);
-      sendPage("Listening for new code for 10 seconds", "Alert", 2, 200, true);
+      sendPage("Listening for new code for 10 seconds. Page will automatically refresh after this time", "Alert", 2, 200, true);
     }
   });
 
