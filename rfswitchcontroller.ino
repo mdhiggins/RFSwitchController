@@ -239,74 +239,151 @@ String ipToString(IPAddress ip)
 }
 
 //+=============================================================================
-// Wrap header and footer into content
+// Stream header HTML
 //
-String wrapPage(String &content) {
-  String wrap = "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head><meta http-equiv='refresh' content='300' />";
-  wrap += "<meta name='viewport' content='width=device-width, initial-scale=0.75' />";
-  wrap += "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />";
-  wrap += "<title>ESP8266 RF Controller (" + String(host_name) + ")</title></head><body>";
-  wrap += "<div class='container'>";
-  wrap +=   "<h1>ESP8266 RF Controller</h1>";
-  wrap +=   "<div class='row'>";
-  wrap +=     "<div class='col-md-12'>";
-  wrap +=       "<ul class='nav nav-pills'>";
-  wrap +=         "<li class='active'>";
-  wrap +=           "<a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'>Hostname <span class='badge'>" + String(host_name) + ".local" + ":" + String(port) + "</span></a></li>";
-  wrap +=         "<li class='active'>";
-  wrap +=           "<a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'>Local <span class='badge'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span></a></li>";
-  wrap +=         "<li class='active'>";
-  wrap +=           "<a href='#'>MAC <span class='badge'>" + String(WiFi.macAddress()) + "</span></a></li>";
-  wrap +=       "</ul>";
-  wrap +=     "</div>";
-  wrap +=   "</div><hr />";
-  wrap += content;
-  wrap +=   "<div class='row'><div class='col-md-12'><em>" + String(millis()) + "ms uptime</em></div></div>";
-  wrap += "</div>";
-  wrap += "</body></html>";
-  return wrap;
+void sendHeader() {
+  sendHeader(200);
+}
+
+void sendHeader(int httpcode) {
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(httpcode, "text/html", "");
+  server.sendContent( "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head><meta http-equiv='refresh' content='300' />");
+  server.sendContent( "<meta name='viewport' content='width=device-width, initial-scale=0.75' />");
+  server.sendContent( "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />");
+  server.sendContent( "<title>ESP8266 RF Controller (" + String(host_name) + ")</title></head><body>");
+  server.sendContent( "<div class='container'>");
+  server.sendContent(   "<h1>ESP8266 RF Controller</h1>");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<ul class='nav nav-pills'>");
+  server.sendContent(         "<li class='active'>");
+  server.sendContent(           "<a href='http://" + String(host_name) + ".local" + ":" + String(port) + "'>Hostname <span class='badge'>" + String(host_name) + ".local" + ":" + String(port) + "</span></a></li>");
+  server.sendContent(         "<li class='active'>");
+  server.sendContent(           "<a href='http://" + ipToString(WiFi.localIP()) + ":" + String(port) + "'>Local <span class='badge'>" + ipToString(WiFi.localIP()) + ":" + String(port) + "</span></a></li>");
+  server.sendContent(         "<li class='active'>");
+  server.sendContent(           "<a href='#'>MAC <span class='badge'>" + String(WiFi.macAddress()) + "</span></a></li>");
+  server.sendContent(       "</ul>");
+  server.sendContent(     "</div>");
+  server.sendContent(   "</div><hr />");
+}
+
+void sendFooter() {
+  server.sendContent(   "<div class='row'><div class='col-md-12'><em>" + String(millis()) + "ms uptime</em></div></div>");
+  server.sendContent( "</div>");
+  server.sendContent( "</body></html>");
+  server.client().stop();
 }
 
 //+=============================================================================
-// Generate info page HTML
+// Stream main page HTML
 //
-String getPage(String message, String header, int type = 0) {
-  String page = "";
+void sendPage(String message, String header) {
+  sendPage(message, header, 0);
+}
+
+void sendPage(String message, String header, int type) {
+  String blank = "";
+  sendPage(message, header, type, blank, blank, blank, blank);
+}
+
+void sendPage(String message, String header, int type, String lc, String lb, String lpr, String lpu) {
+  sendHeader();
   if (type == 1)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "!</strong> " + message + "</div></div></div>";
+  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-success'><strong>" + header + "!</strong> " + message + "</div></div></div>");
   if (type == 2)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "!</strong> " + message + "</div></div></div>";
+  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-warning'><strong>" + header + "!</strong> " + message + "</div></div></div>");
   if (type == 3)
-  page +=   "<div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "!</strong> " + message + "</div></div></div>";
-  page +=   "<div class='row'>";
-  page +=     "<div class='col-md-12'>";
-  page +=       "<h3>Switches</h3>";
-  page +=       "<table class='table table-striped' style='table-layout: fixed;'>";
-  page +=         "<thead><tr><th>Switch Name</th><th>On Command</th><th>Off Command</th></tr></thead>";
-  page +=         "<tbody>";
-  page +=           "<tr><td><form class='form-inline' method='post' action='/config/switch'><div class='form-group'><input type='text' name='name' class='form-control' value='" + String(s1name) + "' /><button type='submit' class='btn btn-default'>&#8635;</button><input type='hidden' name='switch' value='1' /></div></form></td><td><a href='/config/switch?switch=1&amp;state=1'><code>" + String(s1code) + "</code></a></td><td><a href='/config/switch?switch=1&amp;state=0'><code>" + String(s1off) + "</code></a></td></tr>";
-  page +=           "<tr><td><form class='form-inline' method='post' action='/config/switch'><div class='form-group'><input type='text' name='name' class='form-control' value='" + String(s2name) + "' /><button type='submit' class='btn btn-default'>&#8635;</button><input type='hidden' name='switch' value='2' /></div></form></td><td><a href='/config/switch?switch=2&amp;state=1'><code>" + String(s2code) + "</code></a></td><td><a href='/config/switch?switch=2&amp;state=0'><code>" + String(s2off) + "</code></a></td></tr>";
-  page +=           "<tr><td><form class='form-inline' method='post' action='/config/switch'><div class='form-group'><input type='text' name='name' class='form-control' value='" + String(s3name) + "' /><button type='submit' class='btn btn-default'>&#8635;</button><input type='hidden' name='switch' value='3' /></div></form></td><td><a href='/config/switch?switch=3&amp;state=1'><code>" + String(s3code) + "</code></a></td><td><a href='/config/switch?switch=3&amp;state=0'><code>" + String(s3off) + "</code></a></td></tr>";
-  page +=           "<tr><td><form class='form-inline' method='post' action='/config/switch'><div class='form-group'><input type='text' name='name' class='form-control' value='" + String(s4name) + "' /><button type='submit' class='btn btn-default'>&#8635;</button><input type='hidden' name='switch' value='4' /></div></form></td><td><a href='/config/switch?switch=4&amp;state=1'><code>" + String(s4code) + "</code></a></td><td><a href='/config/switch?switch=4&amp;state=0'><code>" + String(s4off) + "</code></a></td></tr>";
-  page +=           "<tr><td><form class='form-inline' method='post' action='/config/switch'><div class='form-group'><input type='text' name='name' class='form-control' value='" + String(s5name) + "' /><button type='submit' class='btn btn-default'>&#8635;</button><input type='hidden' name='switch' value='5' /></div></form></td><td><a href='/config/switch?switch=5&amp;state=1'><code>" + String(s5code) + "</code></a></td><td><a href='/config/switch?switch=5&amp;state=0'><code>" + String(s5off) + "</code></a></td></tr>";
-  page +=         "</tbody></table>";
-  page +=     "</div></div>";
-  page +=   "<div class='row'>";
-  page +=     "<div class='col-md-12'>";
-  page +=       "<ul class='list-unstyled'>";
-  page +=         "<li><span class='badge'>GPIO " + String(pinR) + "</span> Receiving </li>";
-  page +=         "<li><span class='badge'>GPIO " + String(pinT) + "</span> Transmitting </li>";
-  page +=         "<li><span class='badge'>" + String(bits) + "</span> Bits </li>";
-  page +=         "<li><span class='badge'>" + String(pulse) + "</span> Pulse </li>";
-  page +=         "<li><span class='badge'>" + String(protocol) + "</span> Protocol </li>";
-  page +=       "</ul>";
-  page +=     "</div>";
-  page +=   "</div>";
-  return wrapPage(page);
+  server.sendContent(   "<div class='row'><div class='col-md-12'><div class='alert alert-danger'><strong>" + header + "!</strong> " + message + "</div></div></div>");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<h3>Switches</h3>");
+  server.sendContent(       "<form method='post' action='/config/name'>");
+  server.sendContent(         "<table class='table table-striped' style='table-layout: fixed;'>");
+  server.sendContent(           "<thead><tr><th>Switch Name</th><th>On Command</th><th>Off Command</th></tr></thead>");
+  server.sendContent(           "<tbody>");
+  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s1name' class='form-control' value='" + String(s1name) + "' /></div></td><td><a href='/config/switch?switch=1&amp;state=1'><code>" + String(s1code) + "</code></a></td><td><a href='/config/switch?switch=1&amp;state=0'><code>" + String(s1off) + "</code></a></td></tr>");
+  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s2name' class='form-control' value='" + String(s2name) + "' /></div></td><td><a href='/config/switch?switch=2&amp;state=1'><code>" + String(s2code) + "</code></a></td><td><a href='/config/switch?switch=2&amp;state=0'><code>" + String(s2off) + "</code></a></td></tr>");
+  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s3name' class='form-control' value='" + String(s3name) + "' /></div></td><td><a href='/config/switch?switch=3&amp;state=1'><code>" + String(s3code) + "</code></a></td><td><a href='/config/switch?switch=3&amp;state=0'><code>" + String(s3off) + "</code></a></td></tr>");
+  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s4name' class='form-control' value='" + String(s4name) + "' /></div></td><td><a href='/config/switch?switch=4&amp;state=1'><code>" + String(s4code) + "</code></a></td><td><a href='/config/switch?switch=4&amp;state=0'><code>" + String(s4off) + "</code></a></td></tr>");
+  server.sendContent(             "<tr><td><div class='form-group' style='padding-right: 15%;'><input type='text' name='s5name' class='form-control' value='" + String(s5name) + "' /></div></td><td><a href='/config/switch?switch=5&amp;state=1'><code>" + String(s5code) + "</code></a></td><td><a href='/config/switch?switch=5&amp;state=0'><code>" + String(s5off) + "</code></a></td></tr>");
+  server.sendContent(           "</tbody></table>");
+  server.sendContent(           "<button type='submit' class='btn btn-default pull-right'>Update Names and Reboot</button>");
+  server.sendContent(         "</form>");
+  server.sendContent(     "</div></div>");
+  server.sendContent(   "<hr />");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<h3>Send Code</h3>");
+  server.sendContent(       "<form class='form-inline' method='post' action='/send'>");
+  server.sendContent(         "<div class='input-group'>");
+  server.sendContent(           "<div class='input-group-addon'>Code</div>");
+  server.sendContent(           "<input type='text' name='code' class='form-control' value='" + lc + "' /> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Bits</div>");
+  server.sendContent(           "<input type='text' name='bits' class='form-control' value='" + lb + "' /> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Protocol</div>");
+  server.sendContent(           "<input type='text' name='protocol' class='form-control' value='" + lpr + "' /> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Pulse</div>");
+  server.sendContent(           "<input type='text' name='pulse' class='form-control' value='" + lpu + "' /> </div>");
+  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Send</button>");
+  server.sendContent(       "</form>");
+  server.sendContent(     "</div></div>");
+  server.sendContent(   "<hr />");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<h3>Parameters</h3>");
+  server.sendContent(       "<form class='form-inline' method='post' action='/config'>");
+  server.sendContent(         "<div class='input-group'>");
+  server.sendContent(           "<div class='input-group-addon'>Bits</div>");
+  server.sendContent(           "<input type='text' name='bits' class='form-control' value='" + String(bits) + "' /> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Protocol</div>");
+  server.sendContent(           "<input type='text' name='protocol' class='form-control' value='" + String(protocol) + "' /> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Pulse</div>");
+  server.sendContent(           "<input type='text' name='pulse' class='form-control' value='" + String(pulse) + "' /> </div>");
+  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Save</button>");
+  server.sendContent(       "</form>");
+  server.sendContent(     "</div></div>");
+  server.sendContent(   "<hr />");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<h3>Switch Override</h3>");
+  server.sendContent(       "<form class='form-inline' method='post' action='/config/switch'>");
+  server.sendContent(         "<div class='form-group'>");
+  //server.sendContent(           "<label for='switches'>Switches</label>");
+  server.sendContent(           "<select id='switches' name='switch' class='form-control'>");
+  server.sendContent(             "<option value=1>" + String(s1name) + "</option>");
+  server.sendContent(             "<option value=2>" + String(s2name) + "</option>");
+  server.sendContent(             "<option value=3>" + String(s3name) + "</option>");
+  server.sendContent(             "<option value=4>" + String(s4name) + "</option>");
+  server.sendContent(             "<option value=5>" + String(s5name) + "</option>");
+  server.sendContent(           "</select></div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>On</div>");
+  server.sendContent(           "<input type='text' name='on' class='form-control'/> </div>");
+  server.sendContent(         "<div class='input-group' style='margin-left: 10px;'>");
+  server.sendContent(           "<div class='input-group-addon'>Off</div>");
+  server.sendContent(           "<input type='text' name='off' class='form-control'/> </div>");
+  server.sendContent(         "<button type='submit' class='btn btn-default pull-right'>Save</button>");
+  server.sendContent(       "</form>");
+  server.sendContent(     "</div></div>");
+  server.sendContent(   "<hr />");
+  server.sendContent(   "<div class='row'>");
+  server.sendContent(     "<div class='col-md-12'>");
+  server.sendContent(       "<ul class='list-unstyled'>");
+  server.sendContent(         "<li><span class='badge'>GPIO " + String(pinR) + "</span> Receiving </li>");
+  server.sendContent(         "<li><span class='badge'>GPIO " + String(pinT) + "</span> Transmitting </li>");
+  server.sendContent(       "</ul>");
+  server.sendContent(     "</div>");
+  server.sendContent(   "</div>");
+  sendFooter();
 }
 
 void setup() {
-  // serial init
   Serial.begin(115200);
 
   if (!setupWifi(digitalRead(configpin) == LOW))
@@ -320,14 +397,13 @@ void setup() {
 
   wifi_set_sleep_type(LIGHT_SLEEP_T);
   digitalWrite(BUILTIN_LED, LOW);
-  // Turn off the led in 5s
-  ticker.attach(5, disableLed);
+  ticker.attach(2, disableLed);
 
   // Configure mDNS
   if (MDNS.begin(host_name)) {
     Serial.println("mDNS started. Hostname is set to " + String(host_name) + ".local");
   }
-  MDNS.addService("http", "tcp", port); // Anounce the ESP as an HTTP service
+  MDNS.addService("http", "tcp", port);
 
   // Setup the WeMo emulator
   wemoManager.begin();
@@ -336,55 +412,69 @@ void setup() {
   wemoSwitch3 = new WemoSwitch(String(s3name), 83, switchThreeOn, switchThreeOff);
   wemoSwitch4 = new WemoSwitch(String(s4name), 84, switchFourOn, switchFourOff);
   wemoSwitch5 = new WemoSwitch(String(s5name), 85, switchFiveOn, switchFiveOff);
-  if (String(s1name) !=  "") {
-    wemoManager.addDevice(*wemoSwitch1);
-  }
-  if (String(s2name) != "") {
-    wemoManager.addDevice(*wemoSwitch2);
-  }
+  if (String(s1name) != "") wemoManager.addDevice(*wemoSwitch1);
+  if (String(s2name) != "") wemoManager.addDevice(*wemoSwitch2);
+  if (String(s3name) != "") wemoManager.addDevice(*wemoSwitch3);
+  if (String(s4name) != "") wemoManager.addDevice(*wemoSwitch4);
+  if (String(s5name) != "") wemoManager.addDevice(*wemoSwitch5);
 
-  if (String(s3name) != "") {
-    wemoManager.addDevice(*wemoSwitch3);
-  }
-
-  if (String(s4name) != "") {
-    wemoManager.addDevice(*wemoSwitch4);
-  }
-
-  if (String(s5name) != "") {
-    wemoManager.addDevice(*wemoSwitch5);
-  }
-
-  rcSwitch.enableTransmit(pinT); // Pin with which to transmit on
+  rcSwitch.enableTransmit(pinT);  // Pin with which to transmit on
   rcSwitch2.enableReceive(pinR);  // Pin to receive
+
+  server.on("/config/name", []() {
+    String s1n = server.arg("s1name");
+    String s2n = server.arg("s2name");
+    String s3n = server.arg("s3name");
+    String s4n = server.arg("s4name");
+    String s5n = server.arg("s5name");
+
+    strncpy(s1name, s1n.c_str(), 20); 
+    strncpy(s2name, s2n.c_str(), 20);
+    strncpy(s3name, s3n.c_str(), 20);
+    strncpy(s4name, s4n.c_str(), 20);
+    strncpy(s5name, s5n.c_str(), 20);
+    saveConfig();
+
+    sendPage("Switch name updated, device must restart", "Success", 1);
+    delay(2000);
+    ESP.restart(); // Device need to be restarted to reset the WeMo switches
+  });
 
   server.on("/config/switch", []() {
     Serial.println("Connection received");
-    if (server.hasArg("switch") && server.hasArg("state")) {
+    if (server.hasArg("switch") && server.hasArg("on") && server.hasArg("off")) {
+      String oncode = server.arg("on");
+      String offcode = server.arg("off");
+      switch (server.arg("switch").toInt()) {
+        case 1:
+          strncpy(s1code, oncode.c_str(), 20);
+          strncpy(s1off, offcode.c_str(), 20);
+          break;
+        case 2:
+          strncpy(s2code, oncode.c_str(), 20);
+          strncpy(s2off, offcode.c_str(), 20);
+          break;
+        case 3:
+          strncpy(s3code, oncode.c_str(), 20);
+          strncpy(s3off, offcode.c_str(), 20);
+          break;
+        case 4:
+          strncpy(s4code, oncode.c_str(), 20);
+          strncpy(s4off, offcode.c_str(), 20);
+          break;
+        case 5:
+          strncpy(s5code, oncode.c_str(), 20);
+          strncpy(s5off, offcode.c_str(), 20);
+          break;
+      }
+      sendPage("Code updated", "Success", 1);
+    }
+    else if (server.hasArg("switch") && server.hasArg("state")) {
       saveCode = server.arg("switch").toInt();
       onoff = server.arg("state").toInt() + 1;
       digitalWrite(BUILTIN_LED, LOW);
       ticker.attach(10, stopListening);
-      server.send(200, "text/html", getPage("Listening for new code for 10 seconds", "Alert", 2));
-    } else if (server.hasArg("switch") && server.hasArg("name")) {
-      String ns = server.arg("name");
-      const char* nm = ns.c_str();
-      switch (server.arg("switch").toInt()) {
-        case 1:
-          strncpy(s1name, nm, 20); break;
-        case 2:
-          strncpy(s2name, nm, 20); break;
-        case 3:
-          strncpy(s3name, nm, 20); break;
-        case 4:
-          strncpy(s4name, nm, 20); break;
-        case 5:
-          strncpy(s5name, nm, 20); break;
-        default:
-          break;
-      }
-      saveConfig();
-      server.send(200, "text/html", getPage("Switch name updated", "Success", 1));
+      sendPage("Listening for new code for 10 seconds", "Alert", 2);
     }
   });
 
@@ -400,12 +490,13 @@ void setup() {
       strncpy(bits, server.arg("bits").c_str(), 10);
     }
     saveConfig();
-    server.send(200, "text/html", getPage("Global settings updated", "Success", 1));
+
+    sendPage("Global settings updated", "Success", 1);
   });
 
   server.on("/", []() {
     Serial.println("Connection received");
-    server.send(200, "text/html", getPage("", "", 0));
+    sendPage("", "", 0);
   });
 
   server.on("/send", []() {
@@ -417,7 +508,8 @@ void setup() {
     rcSwitch.setProtocol(prot);
     rcSwitch.setPulseLength(pulse);
     rcSwitch.send(code, b);
-    server.send(200, "text/html", getPage("Sending code", "Success", 1));
+
+    sendPage("Sending code", "Success", 1, String(code), String(b), String(prot), String(pulse));
   });
 
   server.begin();
@@ -430,9 +522,7 @@ void loop() {
   server.handleClient();
 
   if (rcSwitch2.available()) {
-
     int value = rcSwitch2.getReceivedValue();
-
     if (value == 0) {
       Serial.print("Unknown encoding");
     } else {
@@ -462,87 +552,103 @@ void loop() {
           }
           break;
       }
-      Serial.print("Received ");
+      Serial.print("Received: ");
       Serial.print(rcSwitch2.getReceivedValue());
       Serial.print(" / ");
       Serial.print(rcSwitch2.getReceivedBitlength());
-      Serial.print("bit ");
-      Serial.print("Protocol: ");
-      Serial.println(rcSwitch2.getReceivedProtocol());
-      Serial.print("Delay: ");
+      Serial.print("bit /");
+      Serial.print("protocol ");
+      Serial.print(rcSwitch2.getReceivedProtocol());
+      Serial.print(" / pulse ");
       Serial.println(rcSwitch2.getReceivedDelay());
     }
     rcSwitch2.resetAvailable();
   }
 }
 
-void switchOneOn() {
+void sendSignal(char* protocol, char* pulse, char* code, char* bits) {
   rcSwitch.setProtocol(atoi(protocol));
   rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s1code), atoi(bits));
+  rcSwitch.send(atoi(code), atoi(bits));
+}
+
+void switchOneOn() {
+  sendSignal(protocol, pulse, s1code, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s1code), atoi(bits));
   //rcSwitch.send(16165135, 24);
 }
 
 void switchOneOff() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s1off), atoi(bits));
+  sendSignal(protocol, pulse, s1off, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s1off), atoi(bits));
   //rcSwitch.send(16165134, 24);
 }
 
 void switchTwoOn() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s2code), atoi(bits));
+  sendSignal(protocol, pulse, s2code, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s2code), atoi(bits));
   //rcSwitch.send(16165133, 24);
 }
 
 void switchTwoOff() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s2off), atoi(bits));
+  sendSignal(protocol, pulse, s2off, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s2off), atoi(bits));
   //rcSwitch.send(16165132, 24);
 }
 
 void switchThreeOn() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s3code), atoi(bits));
+  sendSignal(protocol, pulse, s3code, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s3code), atoi(bits));
   //rcSwitch.send(16165131, 24);
 }
 
 void switchThreeOff() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s3off), atoi(bits));
+  sendSignal(protocol, pulse, s3off, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s3off), atoi(bits));
   //rcSwitch.send(16165130, bits);
 }
 
 void switchFourOn() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s4code), atoi(bits));
+  sendSignal(protocol, pulse, s4code, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s4code), atoi(bits));
   //rcSwitch.send(16165127, 24);
 }
 
 void switchFourOff() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s4off), atoi(bits));
+  sendSignal(protocol, pulse, s4off, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s4off), atoi(bits));
   //rcSwitch.send(16165126, 24);
 }
 
 void switchFiveOn() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s5code), atoi(bits));
+  sendSignal(protocol, pulse, s5code, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s5code), atoi(bits));
   //rcSwitch.send(16165125, 24);
 }
 
 void switchFiveOff() {
-  rcSwitch.setProtocol(atoi(protocol));
-  rcSwitch.setPulseLength(atoi(pulse));
-  rcSwitch.send(atoi(s5off), atoi(bits));
+  sendSignal(protocol, pulse, s5off, bits);
+  //rcSwitch.setProtocol(atoi(protocol));
+  //rcSwitch.setPulseLength(atoi(pulse));
+  //rcSwitch.send(atoi(s5off), atoi(bits));
   //rcSwitch.send(16165124, 24);
 }
 
