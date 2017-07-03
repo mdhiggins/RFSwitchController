@@ -606,7 +606,6 @@ void sendSignal(char* protocol, char* pulse, char* code, char* bits) {
   rcSwitch.send(atoi(code), atoi(bits));
   digitalWrite(BUILTIN_LED, LOW);
   ticker.attach(0.5, disableLed);
-  delay(200);
   rcSwitch2.resetAvailable();
 }
 
