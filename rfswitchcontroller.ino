@@ -172,25 +172,25 @@ bool setupWifi(bool resetConf) {
         if (json.success()) {
           Serial.println("\nparsed json");
 
-          strncpy(host_name, json["hostname"], 40);
-          strncpy(s1name, json["s1name"], 40);
-          strncpy(s2name, json["s2name"], 40);
-          strncpy(s3name, json["s3name"], 40);
-          strncpy(s4name, json["s4name"], 40);
-          strncpy(s5name, json["s5name"], 40);
-          strncpy(s1code, json["s1code"], 20);
-          strncpy(s2code, json["s2code"], 20);
-          strncpy(s3code, json["s3code"], 20);
-          strncpy(s4code, json["s4code"], 20);
-          strncpy(s5code, json["s5code"], 20);
-          strncpy(s1off, json["s1off"], 20);
-          strncpy(s2off, json["s2off"], 20);
-          strncpy(s3off, json["s3off"], 20);
-          strncpy(s4off, json["s4off"], 20);
-          strncpy(s5off, json["s5off"], 20);
-          strncpy(pulse, json["pulse"], 10);
-          strncpy(protocol, json["protocol"], 10);
-          strncpy(bits, json["bits"], 10);
+          if (json.containsKey("hostname")) strncpy(host_name, json["hostname"], 40);
+          if (json.containsKey("s1name")) strncpy(s1name, json["s1name"], 40);
+          if (json.containsKey("s2name")) strncpy(s2name, json["s2name"], 40);
+          if (json.containsKey("s3name")) strncpy(s3name, json["s3name"], 40);
+          if (json.containsKey("s4name")) strncpy(s4name, json["s4name"], 40);
+          if (json.containsKey("s5name")) strncpy(s5name, json["s5name"], 40);
+          if (json.containsKey("s1code")) strncpy(s1code, json["s1code"], 20);
+          if (json.containsKey("s2code")) strncpy(s2code, json["s2code"], 20);
+          if (json.containsKey("s3code")) strncpy(s3code, json["s3code"], 20);
+          if (json.containsKey("s4code")) strncpy(s4code, json["s4code"], 20);
+          if (json.containsKey("s5code")) strncpy(s5code, json["s5code"], 20);
+          if (json.containsKey("s1off")) strncpy(s1off, json["s1off"], 20);
+          if (json.containsKey("s2off")) strncpy(s2off, json["s2off"], 20);
+          if (json.containsKey("s3off")) strncpy(s3off, json["s3off"], 20);
+          if (json.containsKey("s4off")) strncpy(s4off, json["s4off"], 20);
+          if (json.containsKey("s5off")) strncpy(s5off, json["s5off"], 20);
+          if (json.containsKey("pulse")) strncpy(pulse, json["pulse"], 10);
+          if (json.containsKey("protocol")) strncpy(protocol, json["protocol"], 10);
+          if (json.containsKey("bits")) strncpy(bits, json["bits"], 10);
         } else {
           Serial.println("failed to load json config");
         }
@@ -255,6 +255,7 @@ void sendHeader(int httpcode, bool redirect) {
   server.sendContent("    <meta http-equiv='refresh' content='10;URL=/' />\n");
   server.sendContent("    <meta name='viewport' content='width=device-width, initial-scale=0.75' />\n");
   server.sendContent("    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' />\n");
+  server.sendContent("    <style>@media (max-width: 767px) {.nav-pills>li {float: none; margin-left: 0; margin-top: 5px; text-align: center;}}</style>\n");
   server.sendContent("    <title>ESP8266 RF Controller (" + String(host_name) + ")</title>\n");
   server.sendContent("  </head>\n");
   server.sendContent("  <body>");
@@ -589,19 +590,24 @@ void loop() {
       Serial.print(" / ");
       Serial.print(rcSwitch2.getReceivedBitlength());
       Serial.print("bit /");
-      Serial.print("protocol ");
+      Serial.print(" protocol ");
       Serial.print(rcSwitch2.getReceivedProtocol());
       Serial.print(" / pulse ");
       Serial.println(rcSwitch2.getReceivedDelay());
     }
     rcSwitch2.resetAvailable();
   }
+  delay(200);
 }
 
 void sendSignal(char* protocol, char* pulse, char* code, char* bits) {
   rcSwitch.setProtocol(atoi(protocol));
   rcSwitch.setPulseLength(atoi(pulse));
   rcSwitch.send(atoi(code), atoi(bits));
+  digitalWrite(BUILTIN_LED, LOW);
+  ticker.attach(0.5, disableLed);
+  delay(200);
+  rcSwitch2.resetAvailable();
 }
 
 void switchOneOn() {
